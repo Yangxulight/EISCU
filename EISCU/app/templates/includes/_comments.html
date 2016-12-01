@@ -1,0 +1,35 @@
+<ul class="comments">
+    {% for comment in comments %}
+    <li class="comment">
+        <div class="comment-thumbnail">
+            <a href="{{ url_for('.user', username=comment.commenter.username) }}">
+                <img class="img-rounded profile-thumbnail" src="{{ comment.commenter.gravatar(size=40) }}">
+            </a>
+        </div>
+        <div class="comment-content">
+            <div class="comment-date">{{ moment(comment.com_date).fromNow() }}</div>
+            <div class="comment-author"><a href="{{ url_for('.user', username=comment.commenter.username) }}">{{ comment.commenter.username }}</a></div>
+            <div class="comment-body">
+                {% if comment.disabled %}
+                <p><i>抱歉，该评论已经被管理员屏蔽。</i></p>
+                {% endif %}
+                {% if moderate or not comment.disabled %}
+                    {% if comment.com_content_html %}
+                        {{ comment.com_content_html | safe }}
+                    {% else %}
+                        {{ comment.com_content }}
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% if moderate %}
+                <br>
+                {% if comment.disabled %}
+                <a class="btn btn-default btn-xs" href="{{ url_for('.moderate_enable', id=comment.id, page=page) }}">Enable</a>
+                {% else %}
+                <a class="btn btn-danger btn-xs" href="{{ url_for('.moderate_disable', id=comment.id, page=page) }}">Disable</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>

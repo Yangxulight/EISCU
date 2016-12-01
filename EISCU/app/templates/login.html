@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+    {% import 'bootstrap/wtf.html' as wtf %}
+    {% block head %}
+        {{ super() }}
+    {% endblock head %}
+
+{% block content %}
+<div class="container">
+
+<h1>Login </h1>
+    <div class="col-md-4">{{ wtf.quick_form(form) }}
+    </div>
+    <p>
+   新用户?点击<a href="{{ url_for('auth.register')}}"> 这里 </a> 注册一个账户
+  </p>
+</div>
+
+{% endblock %}

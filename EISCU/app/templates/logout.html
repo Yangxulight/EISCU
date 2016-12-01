@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+    {% block head %}
+{{ super() }}
+    {% endblock head %}
+
+{% block navbar %} {{ nav.top.render() }} {% endblock %}
+{% block content %}
+<h1>Login </h1>
+<div>
+   {{ username }} , You have been logged out.
+
+<</div>
+
+{% endblock %

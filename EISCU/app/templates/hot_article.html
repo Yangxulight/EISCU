@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+    {% import 'includes/_macros.html' as macros %}
+    {% block head %}
+        {{ super() }}
+    {% endblock head %}
+    {% block scripts %}
+    {{ super() }} 
+    {{ pagedown.include_pagedown() }}
+    {% endblock scripts %}
+    {% block content %}
+<div class="container">
+    {% include 'includes/_posts.html' %}
+    <div class="pagination">
+        {{ macros.pagination_widget(pagination,'.index')}}
+    </div>
+</div>
+{% endblock %}

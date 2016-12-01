@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+    {% import 'bootstrap/wtf.html' as wtf %}
+    {% import 'includes/_macros.html' as macros %}
+    {% block head %}
+        {{ super() }}
+    {% endblock head %}
+    {% block scripts %}
+    {{ super() }} 
+    {{ pagedown.include_pagedown() }}
+    {% endblock scripts %}
+    {% block content %}
+<div class="container">
+
+    <div class="post-tabs">
+    <div>
+    {% if current_user.can(Permission.WRITE_ARTICLES) %}
+    {{ wtf.quick_form(form) }}
+{#     {% else %}
+    <h1>游客禁止编写文章</h1> #}
+    {% endif %}
+    </div>
+    {% include 'includes/_posts.html' %}
+    </div>
+    <div class="pagination">
+        {{ macros.pagination_widget(pagination,'.index')}}
+    </div>
+</div>
+{% endblock %}
