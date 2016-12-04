@@ -273,10 +273,15 @@ class Article(db.Model):
     # 处理Markdown 文本
     @staticmethod
     def on_changed_content(target,value,oldvalue,initiator):
-        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code','em', 'i', 'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p']
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code','em', 'i', 'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p','img']
+        attrs = {
+        '*': ['class'],
+        'a': ['href', 'rel'],
+        'img': ['src', 'alt']
+        }
         target.content_html = bleach.linkify(bleach.clean(
             markdown(value,output_format='html'),
-                tags=allowed_tags,strip=True))
+                tags=allowed_tags,attributes=attrs,strip=True))
 # 监听自动转化为html文本的方法 ,处理markdown 的时候打开
 db.event.listen(Article.post_content,'set',Article.on_changed_content)
 
