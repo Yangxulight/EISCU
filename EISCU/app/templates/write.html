@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+    {% import 'bootstrap/wtf.html' as wtf %}
+    {% block head %}
+        {{ super() }}
+    {% endblock head %}
+    {% block scripts %}
+    {{ super() }} 
+    {{ pagedown.include_pagedown() }}
+    {% endblock scripts %}
+    {% block content %}
+<div class="container">
+
+    <div class="post-tabs">
+    <div>
+    {% if current_user.can(Permission.WRITE_ARTICLES) %}
+    {{ wtf.quick_form(form) }}
+    {% else %}
+    <h1>游客禁止编写文章</h1>
+    {% endif %}
+    </div>
+    
+</div>
+{% endblock %}

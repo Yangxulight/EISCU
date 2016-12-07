@@ -46,7 +46,7 @@ def hot():
 # 首页访问，可以发布文章
 @main.route('/',methods=['GET','POST'])
 @main.route('/index/',methods=['GET','POST'])
-@login_required
+# @login_required
 def index():
     form = PostForm()
     if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
@@ -65,6 +65,18 @@ def index():
     posts = pagination.items
     return render_template('index.html',title='发表观点',year=datetime.now().year,form=form,posts=posts,pagination=pagination)
 
+@main.route('/write',methods=['GET','POST'])
+@login_required
+def write():
+    form = PostForm()
+    if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit():
+        post = Article(post_content=form.body.data,title=form.title.data,author=current_user._get_current_object())
+        db.session.add(post)
+        db.session.commit()
+        post_id = post.id
+        flash("文章发布成功！")
+        return redirect(url_for('.post',id=post_id))
+    return render_template('write.html',title="发表观点",form=form)
 
 @main.route('/upload',methods =['GET','POST'])
 @login_required
@@ -79,9 +91,9 @@ def upload():
 def about():
     """Renders the about page."""
     return render_template('about.html',
-        title='About',
+        title='本站信息',
         year=datetime.now().year,
-        message='Your application description page.')
+        message='本站是属于川大管理，详细联系方式如下.')
 
 
 
@@ -259,7 +271,7 @@ def moderate_enable(id):
     comment = Comment.query.get_or_404(id)
     comment.disable = False
     db.session.add(comment)
-    db.session.commit()
+    # db.session.commit()
     return redirect(url_for('.moderate',page=request.args.get('page',1,type=int)))
 
 # 开启屏蔽
@@ -270,7 +282,7 @@ def moderate_disable(id):
     comment = Comment.query.get_or_404(id)
     comment.disable = True
     db.session.add(comment)
-    db.session.commit()
+    # db.session.commit()
     return redirect(url_for('.moderate',page=request.args.get('page',1,type=int)))
 
 
@@ -328,6 +340,6 @@ def followed_by(username):
 # 推荐文章
 @main.route('/followed_articles')
 @login_required
-def followed_articles(username):
-    pass
+def followed_articles():
+    return render_template('recommend.html')
 

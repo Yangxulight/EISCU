@@ -132,7 +132,7 @@ class User(UserMixin,db.Model):
 
 # 关注以及取消关注
     def follow(self,user):
-        if not is_following(self,user):
+        if not self.is_following(user):
             f = Follow(follower=self,followed=user)
             db.session.add(f)
     def unfollow(self,user):

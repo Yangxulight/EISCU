@@ -10,10 +10,10 @@
 	{% for message in messages %}
 	<div class="alert-info"> {{message}}</div>
 	{% endfor %}
+	{% endwith %}
 	<div class="col-md-4">
 		{{ wtf.quick_form(form) }}
 	</div>
 
-	{% endwith %}
 </div>
 {% endblock %}
