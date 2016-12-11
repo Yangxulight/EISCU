@@ -1,5 +1,6 @@
  <ul class="posts">
     {% for post in posts %}
+    {% if not post.disabled %}
     <li class="post">
         <div class="title">
             <h2>{{ post.title }}</h2>
@@ -17,25 +18,12 @@
                 <a href="{{ url_for('.user',username=post.author.username) }}"></a>
             </div>
             <div class="post-body">
-            {% if post.disabled %}
-            <p><i>抱歉，改文章已经被管理员屏蔽</i></p>
-            {% endif %}
-            {% if moderate or not post.disabled %}
-                {% if post.content_html %}
-                     {{ post.content_html | safe }}
-                {% else %}
-                     {{ post.post_content}} 
-                {% endif %}
+            {% if post.content_html %}
+                 {{ post.content_html | safe | truncate(400,True)}}
+            {% else %}
+                 {{ post.post_content}} 
             {% endif %}
             </div>
-            {% if moderate %}
-                <br>
-                {% if post.disabled %}
-                <a class="btn btn-default btn-xs" href="{{ url_for('main.article_enable', id=post.id, page=page) }}">取消屏蔽</a>
-                {% else %}
-                <a class="btn btn-danger btn-xs" href="{{ url_for('main.article_disable',id=post.id,page=page) }}">屏蔽</a>
-                {% endif %}
-            {% endif %}
             <div class="post-like col-md-3">
                 <a href="{{url_for('.add_like',id=post.id)}}">
                     <span class="label label-default">赞
@@ -47,11 +35,6 @@
                 <p>{{post.reads}}人看过</p>
             </div>
             <div class="post-footer">
-                {% if post.author == current_user %}
-                <a href="{{ url_for('.edit_article',id=post.id)}}">
-                    <span class="label label-warning">修改文章</span>
-                </a>
-                {% endif %}
                 <a href="{{ url_for('.post',id = post.id)}}">
                     <span class="label label-default"> 文章链接</span>
                 </a>
@@ -60,9 +43,9 @@
                 {{ post.comments.count()}} 条评论
                 </span>
                 </a>
-
             </div>
         </div>
     </li>
+    {% endif %}
     {% endfor %}
 </ul>

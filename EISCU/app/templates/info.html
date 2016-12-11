@@ -8,7 +8,13 @@
 <div class="container">
 <div class="row">
 <div class="col-md-4">
-<img class="img-rounded " src="{{ user.gravatar(size=256) }}">
+<img class="img-rounded " src="{{ user.avatar }}">
+{%if user == current_user%}
+   <form action="{{ url_for('main.change_avatar')}}" method=post enctype=multipart/form-data>
+        <input value="选择头像" type=file name=file><br/>
+        <input value="上传头像" type=submit value=Upload>
+    </form>
+{% endif %}
 </div>
 <div class="col-md-8">
 {# <h2>{{ current_user.username }}</h2> #}
@@ -41,7 +47,7 @@
 	{% endif %}
 	<a href="{{ url_for('.followers',username=user.username) }}">关注他的人:<span class="badge">{{ user.followers.count() }}</span></a>
 	<a href="{{ url_for('.followed_by',username=user.username) }}">关注的人:<span class="badge">{{ user.followed.count() }}</span></a>
-	{% if current_user.is_authenticated and user != current_user and user.is_following(current_user) %}
+	{% if current_user.is_authenticated and user != current_user and user.is_followed_by(current_user) %}
 		| <span class="label label-default">已关注</span>
 	{% endif %}
 	<br>

@@ -50,11 +50,17 @@ class User(UserMixin,db.Model):
     # 是否确认用户注册信息
     confirmed = db.Column(db.Boolean,default=False)
     like_record = db.relationship('Like',backref='liker')
+
+    # 头像
+    avatar = db.Column(db.String(32))
+    is_default_avatar = db.Column(db.Boolean(),default=True)
+     
     # 关注的人
     followed = db.relationship('Follow',
                                 foreign_keys=[Follow.follower_id],
                                 backref=db.backref('follower',lazy='joined'),
                                 lazy='dynamic')
+
     # 关注他的人
     followers = db.relationship('Follow',
                                 foreign_keys=[Follow.followed_id],
@@ -75,9 +81,9 @@ class User(UserMixin,db.Model):
     def __init__(self,password,location=None,confirmed=False,**kwargs):
         super(User,self).__init__(**kwargs)
         self.password_hash = generate_password_hash(password)
-        self.avatar_hash = None
         self.location=location
         self.confirmed=confirmed
+        self.avatar = self.gravatar(size=256)
         if self.role is None:
             if self.email == current_app.config['FLASK_ADMIN']:
                 self.role = Role.query.filter_by(permissions=0xff).first()
@@ -85,6 +91,7 @@ class User(UserMixin,db.Model):
                 self.role = Role.query.filter_by(default=True).first()                 
         # if self.email is not None and self.avatar_hash is None:
         #     self.avatar_hash = gravatar()
+
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -143,9 +150,11 @@ class User(UserMixin,db.Model):
         return self.followed.filter_by(followed_id = user.id).first() is not None
     def is_followed_by(self,user):
         return self.follower.filter_by(follower_id=user.id).first() is not None
+
     @property
     def followed_articles(self):
-        return Article.query.join(Follow,Follow.followed_id == Article.author_id).filter_by(Follow.follower_id == self.id)
+        return Article.query.join(Follow,Follow.followed_id == Article.author_id)\
+            .filter(Follow.follower_id == self.id)
         
     # 随机生成数据
     @staticmethod
@@ -252,7 +261,10 @@ class Article(db.Model):
     like = db.Column(db.Integer,default=0)
     # 阅读量
     reads = db.Column(db.Integer,default=0)
+    # 审核
+    disabled = db.Column(db.Boolean,default=False)
     like_record = db.relationship('Like',backref='article',lazy='dynamic')
+    # summary = db.Column(db.Text)
     @staticmethod
     def generate_fake(count=100):
         from random import seed,randint
@@ -273,7 +285,7 @@ class Article(db.Model):
     # 处理Markdown 文本
     @staticmethod
     def on_changed_content(target,value,oldvalue,initiator):
-        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code','em', 'i', 'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p','img']
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code','em', 'i', 'li', 'ol', 'pre', 'strong', 'ul', 'h1', 'h2', 'h3', 'p','img','tr','td','table']
         attrs = {
         '*': ['class'],
         'a': ['href', 'rel'],
@@ -282,6 +294,7 @@ class Article(db.Model):
         target.content_html = bleach.linkify(bleach.clean(
             markdown(value,output_format='html'),
                 tags=allowed_tags,attributes=attrs,strip=True))
+
 # 监听自动转化为html文本的方法 ,处理markdown 的时候打开
 db.event.listen(Article.post_content,'set',Article.on_changed_content)
 
@@ -299,7 +312,7 @@ class Comment(db.Model):
     com_date = db.Column(db.DateTime,default=datetime.utcnow)
     author_id = db.Column(db.Integer,db.ForeignKey('users.id'))
     # 评论禁止
-    disabled = db.Column(db.Boolean,default=False)
+    disabled = db.Column(db.Boolean)
     @staticmethod
     def on_changed_body(target,value,oldvalue,initiator):
        allowed_tags = ['a','abbr','acronym','code','em','i','strong']

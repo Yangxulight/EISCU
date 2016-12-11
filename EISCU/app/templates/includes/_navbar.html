@@ -20,12 +20,15 @@
 			><a href="{{ url_for('main.hot') }}">热门</a></li>
 			<li {% if url_for('main.write') is current_link %} class="active" {% endif %}
 			><a href="{{ url_for('main.write')}}">发表文章</a></li>
-			<li {% if url_for('main.followed_articles') is current_link %} class="active" {% endif %}
-			><a href="{{ url_for('main.followed_articles') }}">推荐文章</a></li>
+			<li {% if url_for('main.recommend') is current_link %} class="active" {% endif %}
+			><a href="{{ url_for('main.recommend') }}">推荐文章</a></li>
 			<li {% if url_for('main.about') is current_link %} class="active"	{% endif %}
 			><a href="{{ url_for('main.about') }}">关于</a></li>
 		</ul>
 		<ul class="nav navbar-nav navbar-right">
+		{% if current_user.can(Permission.ADMINSTER) %}
+			<li><a href="{{url_for('main.moderate_article')}}"> 审核文章</a></li>
+		{% endif %}
 {% if current_user.can(Permission.MODERATE_COMMENTS) %}
 <li><a href="{{url_for('main.moderate')}}"> 审核评论</a></li>
 {% endif %}

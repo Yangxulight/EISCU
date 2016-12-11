@@ -39,9 +39,11 @@ moment = Moment()
 pagedown = PageDown()
 
 def create_app():
-	app = Flask(__name__)
+	UPLOAD_FOLDER = '/uploads/img/'
+	app = Flask(__name__,static_url_path='',static_folder='static')
 	app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.sqlite') 
 	app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+	app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 	app.config.from_pyfile('config.py')
 	app.url_map.converters['regex'] = RegexConverter
 	# nav.init_app(app)

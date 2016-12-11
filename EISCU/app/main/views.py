@@ -14,6 +14,8 @@ from app.main import main
 from flask_login import login_required
 # 使用装饰器
 from app.decorators import admin_required,permission_required
+from PIL import Image
+from werkzeug import secure_filename
 
 # 测试使用权限装饰器，只能管理员访问
 @main.route('/admin')
@@ -29,14 +31,36 @@ def for_admin_only():
 def for_moderator():
     return "For moderator !"
 
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.',1)[1] in ALLOWED_EXTENSIONS
+
+
+@main.route('/change_avatar',methods=['GET','POST'])
+@login_required
+def change_avatar():
+    if request.method == 'POST':
+        file = request.files['file']
+        size = (256,256)
+        im = Image.open(file)
+        im.thumbnail(size)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            im.save(path.join('app/static/avatar',filename))
+            current_user.is_default_avatar = False 
+            current_user.avatar = url_for('static',filename='avatar/'+filename)
+            db.session.add(current_user)
+            db.session.commit()
+            return redirect(url_for('main.user_info',username=current_user.username))
+    return redirect(url_for('main.user_info',username=current_user.username))
 
 # 热门文章查看
 @main.route('/hot/')
 def hot():
     page = request.args.get('page',1,type=int) # 从请求的查询字符串 request.args 获取页数，默认值为1
     pagination = Article.query.order_by(Article.like.desc()).paginate(
-        page, per_page = current_app.config['FLASKY_POSTS_PER_PAGE'],
+        page, per_page = current_app.config['EISCU_POSTS_PER_PAGE'],
         error_out = False)
     posts = pagination.items
     return render_template('hot_article.html',title='热门文章',year=datetime.now().year,posts=posts,pagination=pagination)
@@ -60,7 +84,7 @@ def index():
     # posts = Article.query.order_by(Article.post_date.desc()).all()
     page = request.args.get('page',1,type=int) # 从请求的查询字符串 request.args 获取页数，默认值为1
     pagination = Article.query.order_by(Article.post_date.desc()).paginate(
-        page, per_page = current_app.config['FLASKY_POSTS_PER_PAGE'],
+        page, per_page = current_app.config['EISCU_POSTS_PER_PAGE'],
         error_out = False)
     posts = pagination.items
     return render_template('index.html',title='发表观点',year=datetime.now().year,form=form,posts=posts,pagination=pagination)
@@ -118,7 +142,7 @@ def user(username):
     # posts = user.articles.order_by(Article.post_date.desc()).all()
     page = request.args.get('page',1,type=int) # 从请求的查询字符串 request.args 获取页数，默认值为1
     pagination = user.articles.order_by(Article.post_date.desc()).paginate(
-        page, per_page = current_app.config['FLASKY_POSTS_PER_PAGE'],
+        page, per_page = current_app.config['EISCU_POSTS_PER_PAGE'],
         error_out = False)
     posts = pagination.items
     return render_template('user.html',title=username+'的个人主页',posts=posts,user=user,pagination=pagination)
@@ -206,6 +230,7 @@ def edit_article(id):
         article.post_content = form.body.data
         article.title = form.title.data
         db.session.add(article)
+        db.session.commit()
         flash('文章修改成功！')
         return redirect(url_for('.post',id=id))
     form.body.data = article.post_content
@@ -264,27 +289,61 @@ def moderate():
 
 # 评论管理路由
 # 关闭屏蔽
-@main.route('/moderate/enable/<int:id>')
+@main.route('/moderate/enable/<int:id>',methods=['GET','POST'])
 @login_required
 @permission_required(Permission.MODERATE_COMMENTS)
 def moderate_enable(id):
     comment = Comment.query.get_or_404(id)
-    comment.disable = False
+    comment.disabled =False
     db.session.add(comment)
-    # db.session.commit()
+    db.session.commit()
     return redirect(url_for('.moderate',page=request.args.get('page',1,type=int)))
 
 # 开启屏蔽
-@main.route('/moderate/disable/<int:id>')
+@main.route('/moderate/disable/<int:id>',methods=['GET','POST'])
 @login_required
 @permission_required(Permission.MODERATE_COMMENTS)
 def moderate_disable(id):
     comment = Comment.query.get_or_404(id)
-    comment.disable = True
+    comment.disabled = True
     db.session.add(comment)
-    # db.session.commit()
+    db.session.commit()
     return redirect(url_for('.moderate',page=request.args.get('page',1,type=int)))
 
+# 审核文章
+@main.route('/moderate_article')
+@login_required
+@permission_required(Permission.ADMINSTER)
+def moderate_article():
+    page = request.args.get('page',1,type=int) # 从请求的查询字符串 request.args 获取页数，默认值为1
+    pagination = Article.query.order_by(Article.post_date.desc()).paginate(
+        page, per_page = current_app.config['EISCU_POSTS_PER_PAGE'],
+        error_out = False)
+    posts = pagination.items
+    return render_template('moderate_article.html',posts=posts,
+                        pagination=pagination,page=page)
+
+@main.route('/moderate_article/enable/<int:id>')
+@login_required
+@permission_required(Permission.ADMINSTER)
+def article_enable(id):
+    article = Article.query.get_or_404(id)
+    article.disabled = False
+    db.session.add(article)
+    db.session.commit()
+    return redirect(url_for('.moderate_article',page=request.args.get('page',1,type=int)))
+
+
+@main.route('/moderate_article/disable/<int:id>')
+@login_required
+@permission_required(Permission.ADMINSTER)
+def article_disable(id):
+    article = Article.query.get_or_404(id)
+    article.disabled = True
+    db.session.add(article)
+    db.session.commit()
+    return redirect(url_for('.moderate_article',page=request.args.get('page',1,type=int)))
+    
 
 
 # 关注模块
@@ -299,6 +358,8 @@ def follow(username):
         flash("你已经关注过他了！")
         return redirect(url_for('.user',username=username))
     current_user.follow(user)
+    db.session.add(current_user)
+    db.session.commit()
     flash("你现在关注了%s" % username)
     return redirect(url_for('.user',username=username))
 
@@ -306,7 +367,19 @@ def follow(username):
 @main.route('/unfollow/<username>')
 @login_required
 def unfollow(username):
-    pass
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash("不存在的用户")
+        return redirect(url_for('.index'))
+    if current_user.is_following(user):
+        current_user.unfollow(user)
+        db.session.add(current_user)
+        db.session.commit()
+        flash("你选择取消关注了他")
+        return redirect(url_for('.user',username=username))
+    else:
+        flash("你还未关注他！")
+        return redirect(url_for('.user'))
 
 @main.route('/followers/<username>')
 @login_required
@@ -320,6 +393,7 @@ def followers(username):
         page,per_page=current_app.config['EISCU_FOLLOWERS_PER_PAGE'],
         error_out=False)
     follows = [{'user':item.follower,'datetime':item.follow_date} for item in pagination.items]  
+    print(follows)
     return render_template('followers.html',user=user,endpoint=".followers",pagination=pagination,follows=follows)      
 
 @main.route('/followed_by/<username>')
@@ -334,12 +408,22 @@ def followed_by(username):
         page,per_page=current_app.config['EISCU_FOLLOWED_PER_PAGE'],
         error_out=False)
     followed = [{'user':item.followed,'datetime':item.follow_date} for item in pagination.items]
-    return render_template('followed.html',user=user,endpoint=".followed",pagination=pagination,followed=followed_by)
+    print(followed)
+    print(user)
+    return render_template('followed.html',user=user,endpoint=".followed_by",pagination=pagination,followed=followed)
 
 
 # 推荐文章
-@main.route('/followed_articles')
+@main.route('/recommend_articles')
 @login_required
-def followed_articles():
-    return render_template('recommend.html')
+def recommend():
+    page = request.args.get('page',1,type=int) # 从请求的查询字符串 request.args 获取页数，默认值为1
+    query = current_user.followed_articles
+    pagination = query.order_by(Article.post_date.desc()).paginate(
+        page,per_page=current_app.config['EISCU_POSTS_PER_PAGE'])
+    posts = pagination.items
+    msg = ''
+    if len(posts) == 0:
+        msg='尚未关注任何人，无法推荐'
+    return render_template('recommend.html',msg=msg,posts=posts,pagination=pagination)
 
