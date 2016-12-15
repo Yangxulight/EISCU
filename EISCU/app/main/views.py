@@ -165,6 +165,7 @@ def edit_profile():
         if email is not None:
             current_user.email = email
         db.session.add(current_user)
+        db.session.commit()
         flash("你的信息已经被更新!")
         return redirect(url_for('.user_info',username=current_user.username))
     form.real_name.data = current_user.real_name
